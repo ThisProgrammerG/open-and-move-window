@@ -62,25 +62,29 @@ class Window:
     def move(self, x, y):
         SetWindowPos(self.hwnd, None, x, y, self.scaled_width, self.scaled_height, win32con.SWP_NOSIZE)
 
-def run(window: Window):
-    subprocess.run([window.program_path])
+class WindowHandler:
+    def __init__(self, window):
+        self.window = window
 
-def move_window(window: Window, primary_monitor: bool) -> None:
-    """ Moves window to the right if not primary monitor. """
-    x = -8 if primary_monitor else window.primary_width - 8
-    y = -8
-    window.move(x, y)
-    properly_maximize(window)
+    def run(self):
+        subprocess.run([self.window.program_path])
 
-def properly_maximize(window: Window):
-    window.un_maximize()
-    window.maximize()
+    def move_window(self, primary_monitor: bool) -> None:
+        """ Moves window to the right if not primary monitor. """
+        x = -8 if primary_monitor else self.window.primary_width - 8
+        y = -8
+        self.window.move(x, y)
+
+    def properly_maximize(self):
+        self.window.un_maximize()
+        self.window.maximize()
 
 def main():
     primary_monitor = len(sys.argv) == 1
-    window = Window('Mozilla Firefox', FIREFOX_PATH)
-    run(window)
-    move_window(window, primary_monitor=primary_monitor)
+    window_handler = WindowHandler(Window('Mozilla Firefox', FIREFOX_PATH))
+    window_handler.run()
+    window_handler.move_window(primary_monitor=primary_monitor)
+    window_handler.properly_maximize()
 
 if __name__ == '__main__':
     main()
