@@ -1,90 +1,69 @@
-import subprocess
 import sys
-import time
-from pathlib import Path
 
+import win32api
 import win32con
-from win32api import GetSystemMetrics
-from win32gui import FindWindow
-from win32gui import GetWindowPlacement
-from win32gui import SetWindowPos
-from win32gui import ShowWindow
+import win32event
+import win32gui
+import win32process
+
+from window import Window
+from window_handler import WindowHandler
 
 
 FIREFOX_PATH = r'C:\Program Files\Mozilla Firefox\firefox.exe'
 
-class Window:
-    def __init__(self, window_title: str, program_path: str):
-        self.window_title = window_title
-        self.program_path = Path(program_path)
-        self._hwnd = None
-
-    def _find_hwnd(self):
-        while (hwnd := FindWindow(None, self.window_title)) in [0, None]:
-            time.sleep(0.1)
-        self._hwnd = hwnd
-
-    @property
-    def hwnd(self):
-        if not self._hwnd:
-            self._find_hwnd()
-        return self._hwnd
-
-    @property
-    def primary_width(self):
-        return GetSystemMetrics(win32con.SM_CXSCREEN)
-
-    @property
-    def primary_height(self):
-        return GetSystemMetrics(win32con.SM_CYSCREEN)
-
-    @property
-    def scaled_width(self):
-        return round(self.primary_width // 1.5)
-
-    @property
-    def scaled_height(self):
-        return round(self.primary_height // 1.5)
-
-    @property
-    def is_maximized(self):
-        return GetWindowPlacement(self.hwnd)[1] == win32con.SW_SHOWMAXIMIZED
-
-    def un_maximize(self):
-        if self.is_maximized:
-            ShowWindow(self.hwnd, win32con.SW_HIDE)
-        else:
-            ShowWindow(self.hwnd, win32con.SW_SHOWDEFAULT)
-
-    def maximize(self):
-        ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
-
-    def move(self, x, y):
-        SetWindowPos(self.hwnd, None, x, y, self.scaled_width, self.scaled_height, win32con.SWP_NOSIZE)
-
-class WindowHandler:
-    def __init__(self, window):
-        self.window = window
-
-    def run(self):
-        subprocess.run([self.window.program_path])
-
-    def move_window(self, primary_monitor: bool) -> None:
-        """ Moves window to the right if not primary monitor. """
-        x = -8 if primary_monitor else self.window.primary_width - 8
-        y = -8
-        self.window.move(x, y)
-
-    def properly_maximize(self):
-        self.window.un_maximize()
-        self.window.maximize()
-
-def main():
+def run():
     primary_monitor = len(sys.argv) == 1
     window_handler = WindowHandler(Window('Mozilla Firefox', FIREFOX_PATH))
     window_handler.run()
     window_handler.move_window(primary_monitor=primary_monitor)
     window_handler.properly_maximize()
+
+def find_firefox_window():
+    firefox_windows = []
+
+    def callback(hwnd, hwnds):
+        if win32gui.IsWindowVisible(hwnd) and win32gui.GetClassName(hwnd) == "MozillaWindowClass":
+            print(f"window text: '{win32gui.GetWindowText(hwnd)}'")
+            hwnds.append(hwnd)
+        return True
+
+    win32gui.EnumWindows(callback, firefox_windows)
+    return firefox_windows
+
+def find_hwnds():
+    hwnds = find_firefox_window()
+    print('Handles:')
+    print(*hwnds, sep='\n')
+    print('=' * 50)
+    return hwnds
+
+def main():
+    # run()
+    primary = False
+    startupinfo = win32process.STARTUPINFO()
+    startupinfo.dwFlags = win32process.STARTF_USESHOWWINDOW
+    startupinfo.dwX = -8 if primary else win32api.GetSystemMetrics(win32con.SM_CXSCREEN) + 80
+    startupinfo.dwY = -8
+    startupinfo.dwXSize = int(win32api.GetSystemMetrics(win32con.SM_CXSCREEN) + 16 // 1.5)
+    startupinfo.dwYSize = int(win32api.GetSystemMetrics(win32con.SM_CYSCREEN) + 16 // 1.5)
+    startupinfo.wShowWindow = win32con.SW_MINIMIZE
+
+
+    proc_info = win32process.CreateProcess(
+            FIREFOX_PATH,  # ApplicationName (None means use command line)
+            None,  # CommandLine
+            None,  # ProcessAttributes (None means inherit from parent process)
+            None,  # ThreadAttributes (None means inherit from parent process)
+            False,  # bInheritHandles (False means don't inherit any handles)
+            0,  # dwCreationFlags (0 means create process normally)
+            None,  # NewEnvironment (None means use parent process's environment)
+            None,  # CurrentDirectory (optional)
+            startupinfo  # StartupInfo
+    )
+    process_handle = proc_info[0]
+    win32event.WaitForInputIdle(process_handle, win32event.INFINITE)
+
 
 if __name__ == '__main__':
     main()
