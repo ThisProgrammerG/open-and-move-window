@@ -2,8 +2,3 @@
 
 Open and move window for dual monitors.
 
-
-
-
-
-
