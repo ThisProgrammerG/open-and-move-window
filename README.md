@@ -1,6 +1,6 @@
 # Open and move window
 
-Written for use with dual monitors.
+Open and move window for dual monitors.
 
 
 
