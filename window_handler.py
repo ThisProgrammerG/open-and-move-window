@@ -11,8 +11,8 @@ class WindowHandler:
 
     def run(self):
         win32process.CreateProcess(
-                str(self.window.program_path),  # ApplicationName (None means use command line)
-                None,  # CommandLine
+                None,  # ApplicationName (None means use command line)
+                str(self.window.program_path),  # CommandLine
                 None,  # ProcessAttributes (None means inherit from parent process)
                 None,  # ThreadAttributes (None means inherit from parent process)
                 False,  # bInheritHandles (False means don't inherit any handles)
