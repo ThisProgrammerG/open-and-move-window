@@ -1,5 +1,3 @@
-import subprocess
-
 import win32process
 
 from window import Window
@@ -31,38 +29,3 @@ class WindowHandler:
     def properly_maximize(self):
         self.window.un_maximize()
         self.window.maximize()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
